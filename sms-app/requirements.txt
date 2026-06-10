@@ -1,3 +1,0 @@
-flask==3.0.3
-android_sms_gateway[requests]
-gunicorn
