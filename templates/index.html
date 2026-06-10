@@ -340,7 +340,7 @@
       </div>
       <div class="step">
         <div class="step-num">3</div>
-        <div>Note down those credentials — you'll enter them below each time you send.</div>
+        <div>Note down those credentials — enter them below and tick <strong>Remember me</strong> so you never have to type them again on this device.</div>
       </div>
       <div class="step">
         <div class="step-num">4</div>
@@ -370,7 +370,7 @@
 
     <!-- Credentials -->
     <div class="card">
-      <h2>Your SMSGate Credentials</h2>
+      <h2>Your SMSGate Credentials <span id="saved-badge" style="display:none;font-size:11px;font-weight:600;background:#e8f7ee;color:#27ae60;border:1px solid #b2dfca;border-radius:999px;padding:2px 10px;margin-left:8px;vertical-align:middle;text-transform:none;letter-spacing:0;">✓ Saved on this device</span></h2>
       <div class="two-col">
         <div class="field">
           <label for="login">Username</label>
@@ -382,6 +382,18 @@
           <div class="hint">From the SMSGate app</div>
           <input type="password" id="password" name="password" placeholder="••••••••" />
         </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;flex-wrap:wrap;gap:10px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:400;cursor:pointer;">
+          <input type="checkbox" id="remember-me" style="width:15px;height:15px;cursor:pointer;" />
+          Remember me on this device
+        </label>
+        <button type="button" id="clear-saved-btn" onclick="clearSaved()" style="display:none;background:none;border:none;font-size:12px;color:#c0392b;cursor:pointer;text-decoration:underline;padding:0;">
+          Forget saved credentials
+        </button>
+      </div>
+      <div style="font-size:12px;color:#888;margin-top:8px;">
+        ⚠ Only use "Remember me" on your own personal device, not a shared or public computer.
       </div>
     </div>
 
@@ -464,6 +476,54 @@
 </div>
 
 <script>
+  // ── Saved credentials (localStorage) ──
+  const STORAGE_KEY = "smsgate_creds";
+
+  function loadSaved() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const creds = JSON.parse(raw);
+      if (creds.login)    document.getElementById("login").value    = creds.login;
+      if (creds.password) document.getElementById("password").value = creds.password;
+      document.getElementById("remember-me").checked = true;
+      document.getElementById("saved-badge").style.display    = "inline-block";
+      document.getElementById("clear-saved-btn").style.display = "inline-block";
+    } catch {}
+  }
+
+  function saveIfChecked() {
+    if (document.getElementById("remember-me").checked) {
+      const creds = {
+        login:    document.getElementById("login").value.trim(),
+        password: document.getElementById("password").value.trim(),
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(creds));
+      document.getElementById("saved-badge").style.display    = "inline-block";
+      document.getElementById("clear-saved-btn").style.display = "inline-block";
+    } else {
+      // If they unchecked it, remove saved data immediately
+      localStorage.removeItem(STORAGE_KEY);
+      document.getElementById("saved-badge").style.display    = "none";
+      document.getElementById("clear-saved-btn").style.display = "none";
+    }
+  }
+
+  function clearSaved() {
+    localStorage.removeItem(STORAGE_KEY);
+    document.getElementById("login").value    = "";
+    document.getElementById("password").value = "";
+    document.getElementById("remember-me").checked = false;
+    document.getElementById("saved-badge").style.display    = "none";
+    document.getElementById("clear-saved-btn").style.display = "none";
+  }
+
+  // Load on page open
+  loadSaved();
+
+  // Save whenever checkbox is toggled
+  document.getElementById("remember-me").addEventListener("change", saveIfChecked);
+
   // ── Character counter ──
   const msgArea = document.getElementById("message");
   const charCount = document.getElementById("char-count");
@@ -493,6 +553,9 @@
     e.preventDefault();
     errBanner.className = "banner"; // hide
     errBanner.textContent = "";
+
+    // Save credentials if remember me is ticked
+    saveIfChecked();
 
     const formData = new FormData(form);
     sendBtn.disabled = true;
